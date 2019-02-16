@@ -1,6 +1,8 @@
 
 # Created by https://www.gitignore.io/api/linux,python,jupyternotebook
 
+/assignment1/cs231n/dataset/cifat-10-python.tar.gz
+
 ### JupyterNotebook ###
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
