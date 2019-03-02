@@ -84,7 +84,7 @@ def svm_loss_vectorized(W, X, y, reg):
     scores[range(num_train), y] = 0
     # construct loss function
     loss = np.sum(np.fmax(scores, 0)) / num_train
-    loss += reg * np.sum(W * W)
+    loss += 0.5 * reg * np.sum(W * W)
 
     #############################################################################
     #                             END OF YOUR CODE                              #
@@ -105,7 +105,7 @@ def svm_loss_vectorized(W, X, y, reg):
     mask[range(num_train), y] = -np.sum(mask, axis=1)
     dW = X.T.dot(mask)
     dW /= num_train
-    dW += 2 * reg * W
+    dW += reg * W
 
     #############################################################################
     #                             END OF YOUR CODE                              #
