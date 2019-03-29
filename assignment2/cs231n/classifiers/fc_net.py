@@ -254,6 +254,7 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         caches = []
+        drop_caches = []
         
         h = X
         
@@ -269,7 +270,10 @@ class FullyConnectedNet(object):
             else: 
                 h, cache = affine_relu_forward(h, self.params['W%d' % i], self.params['b%d' % i])
             caches.append(cache)
-            
+            if self.use_dropout:
+                h, cache = dropout_forward(h, self.dropout_param)
+                drop_caches.append(cache)
+                
         scores, cache = affine_forward(h, self.params["W%d" % self.num_layers],
                                       self.params["b%d" % self.num_layers])
         caches.append(cache)
@@ -308,6 +312,8 @@ class FullyConnectedNet(object):
         
 
         for i in range(self.num_layers - 1, 0, -1):
+            if self.use_dropout:
+                dout = dropout_backward(dout, drop_caches[i - 1])
             if self.normalization:
                 dout, grads['W%d' % i], grads['b%d' % i], grads['gamma%d' % i], grads['beta%d' % i] = affine_bn_relu_backward(dout, caches[i - 1])
             else:
