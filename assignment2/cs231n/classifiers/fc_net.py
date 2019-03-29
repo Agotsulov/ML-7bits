@@ -189,6 +189,11 @@ class FullyConnectedNet(object):
         for i in range(self.num_layers):
             self.params['W%d' % (i + 1)] = weight_scale * np.random.randn(layers[i], layers[i + 1])
             self.params['b%d' % (i + 1)] = np.zeros(layers[i + 1])
+        if self.normalization:
+            for i in range(self.num_layers - 1):
+                self.params['gamma%d' %(i + 1)] = np.ones(layers[i + 1])
+                self.params['beta%d' %(i + 1)] = np.zeros(layers[i + 1])
+               
         
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -252,9 +257,17 @@ class FullyConnectedNet(object):
         
         h = X
         
-        
         for i in range(1, self.num_layers):
-            h, cache = affine_relu_forward(h, self.params['W%d' % i], self.params['b%d' % i])
+            if self.normalization:
+                h, cache = affine_bn_relu_forward(h, 
+                                                  self.params['W%d' % i],
+                                                  self.params['b%d' % i],
+                                                  self.params['gamma%d' % i],
+                                                  self.params['beta%d' % i],
+                                                  self.bn_params[i - 1]
+                                                 )
+            else: 
+                h, cache = affine_relu_forward(h, self.params['W%d' % i], self.params['b%d' % i])
             caches.append(cache)
             
         scores, cache = affine_forward(h, self.params["W%d" % self.num_layers],
@@ -291,9 +304,14 @@ class FullyConnectedNet(object):
             loss += 0.5 * self.reg * (np.sum(curr_W * curr_W))
        
         dout, grads['W%d' % self.num_layers], grads['b%d' % self.num_layers] = affine_backward(dout, caches[-1])
+        grads['W%d' % self.num_layers] += self.reg * self.params['W%d' % self.num_layers]
+        
 
         for i in range(self.num_layers - 1, 0, -1):
-            dout, grads['W%d' % i], grads['b%d' % i] = affine_relu_backward(dout, caches[i - 1])
+            if self.normalization:
+                dout, grads['W%d' % i], grads['b%d' % i], grads['gamma%d' % i], grads['beta%d' % i] = affine_bn_relu_backward(dout, caches[i - 1])
+            else:
+                dout, grads['W%d' % i], grads['b%d' % i] = affine_relu_backward(dout, caches[i - 1])
             grads['W%d' % i] += self.reg * self.params['W%d' % i]
         
         ############################################################################

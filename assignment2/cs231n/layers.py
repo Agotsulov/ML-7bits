@@ -177,7 +177,19 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # Referencing the original paper (https://arxiv.org/abs/1502.03167)   #
         # might prove to be helpful.                                          #
         #######################################################################
-        pass
+        
+        bn_mean = np.mean(x, axis=0)
+        
+        bn_var = 1. / N * np.sum((x - bn_mean) ** 2, axis=0)
+        
+        x_norm = (x - bn_mean) / np.sqrt(bn_var + eps)
+        
+        out = gamma * x_norm + beta
+        
+        running_mean = momentum * running_mean + (1 - momentum) * bn_mean
+        running_var = momentum * running_var + (1 - momentum) * bn_var
+
+        cache = (x_norm, bn_mean, bn_var, eps, gamma, beta, x)
         #######################################################################
         #                           END OF YOUR CODE                          #
         #######################################################################
@@ -188,7 +200,11 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # then scale and shift the normalized data using gamma and beta.      #
         # Store the result in the out variable.                               #
         #######################################################################
-        pass
+        
+        x_norm = (x - running_mean) / np.sqrt(running_var + eps)
+        
+        out = gamma * x_norm + beta
+        
         #######################################################################
         #                          END OF YOUR CODE                           #
         #######################################################################
@@ -226,7 +242,37 @@ def batchnorm_backward(dout, cache):
     # Referencing the original paper (https://arxiv.org/abs/1502.03167)       #
     # might prove to be helpful.                                              #
     ###########################################################################
-    pass
+    
+    #https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
+    x_norm, bn_mean, bn_var, eps, gamma, beta, x = cache
+    N, D = dout.shape
+
+    dbeta = np.sum(dout, axis=0)
+    
+    dgamma = np.sum(dout * x_norm, axis=0)
+    dx_norm = dout * gamma
+    
+    ivar = 1 / np.sqrt(bn_var + eps)
+    
+    divar = np.sum(dx_norm * (x - bn_mean), axis=0)
+    dxmu1 = dx_norm * ivar
+   
+    sqrtvar = np.sqrt(bn_var + eps)
+    dsqrtvar = -1. / (sqrtvar ** 2) * divar
+
+    dvar = 0.5 * 1. / sqrtvar * dsqrtvar
+
+    dsq = 1 / N * np.ones((N, D)) * dvar
+    
+    dxmu2 = 2 * (x - bn_mean) * dsq
+    
+    dx1 = dxmu1 + dxmu2
+    
+    dmu = -1 * np.sum(dxmu1 + dxmu2, axis=0)
+    
+    dx2 = 1 / N * np.ones((N, D)) * dmu
+    
+    dx = dx1 + dx2
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -257,7 +303,36 @@ def batchnorm_backward_alt(dout, cache):
     # should be able to compute gradients with respect to the inputs in a     #
     # single statement; our implementation fits on a single 80-character line.#
     ###########################################################################
-    pass
+    x_norm, bn_mean, bn_var, eps, gamma, beta, x = cache
+    N, D = dout.shape
+
+    dbeta = np.sum(dout, axis=0)
+    
+    dgamma = np.sum(dout * x_norm, axis=0)
+    dx_norm = dout * gamma
+    
+    ivar = 1 / np.sqrt(bn_var + eps)
+    
+    divar = np.sum(dx_norm * (x - bn_mean), axis=0)
+    dxmu1 = dx_norm * ivar
+   
+    sqrtvar = np.sqrt(bn_var + eps)
+    dsqrtvar = -1. / (sqrtvar ** 2) * divar
+
+    dvar = 0.5 * 1. / sqrtvar * dsqrtvar
+
+    dsq = 1 / N * np.ones((N, D)) * dvar
+    
+    dxmu2 = 2 * (x - bn_mean) * dsq
+    
+    dx1 = dxmu1 + dxmu2
+    
+    dmu = -1 * np.sum(dxmu1 + dxmu2, axis=0)
+    
+    dx2 = 1 / N * np.ones((N, D)) * dmu
+    
+    dx = dx1 + dx2
+    # не я не буду сокращять
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
