@@ -238,7 +238,7 @@ class CaptioningRNN(object):
             captions[:, i] = np.argmax(scores, axis=1)
             
             word_embed, _ = word_embedding_forward(captions[:, i], W_embed)
-        
+        print(captions)
         ###########################################################################
         #                             END OF YOUR CODE                            #
         ###########################################################################
